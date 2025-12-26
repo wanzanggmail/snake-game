@@ -6,15 +6,15 @@
     <title>간단한 뱀 게임</title>
     <script>
         // CSS도 동일하게 버전 관리
-        const DEV_MODE = true;
-        const VERSION = '1.0.0';
+        const DEV_MODE_CSS = true;
+        const VERSION_CSS = '1.0.0';
         
         const link = document.createElement('link');
         link.rel = 'stylesheet';
-        if (DEV_MODE) {
+        if (DEV_MODE_CSS) {
             link.href = `style.css?t=${Date.now()}`;
         } else {
-            link.href = `style.css?v=${VERSION}`;
+            link.href = `style.css?v=${VERSION_CSS}`;
         }
         document.head.appendChild(link);
     </script>
@@ -60,31 +60,45 @@
         const DEV_MODE = true; // 배포 시 false로 변경
         let VERSION = '1.0.0'; // 초기 버전
         
-        // 버전 관리 함수
+        // 버전 관리 함수 - 파일 저장 시점 감지
         function getVersion() {
             const versionKey = 'snakeGameVersion';
-            const lastPageLoadKey = 'snakeGameLastPageLoad';
+            const lastFileHashKey = 'snakeGameLastFileHash';
             
             if (DEV_MODE) {
-                // 개발 모드: localStorage에서 버전 가져오기 또는 초기화
+                // 개발 모드: 파일이 변경되었는지 감지하여 버전 증가
                 let version = localStorage.getItem(versionKey);
-                const lastPageLoad = localStorage.getItem(lastPageLoadKey);
-                const now = Date.now();
                 
                 if (!version) {
                     // 처음 로드: 초기 버전 설정
                     version = VERSION;
                     localStorage.setItem(versionKey, version);
-                } else {
-                    // 이전 페이지 로드가 있었고, 5초 이상 지났으면 버전 증가
-                    // (같은 세션에서 연속 새로고침 방지)
-                    if (lastPageLoad && (now - parseInt(lastPageLoad)) > 5000) {
+                }
+                
+                // 현재 페이지의 스크립트 해시 생성 (간단한 방법: URL의 타임스탬프 사용)
+                // 실제로는 파일 내용의 해시를 사용해야 하지만, 타임스탬프로 대체
+                const currentHash = window.location.href + Date.now();
+                const lastHash = localStorage.getItem(lastFileHashKey);
+                
+                // 파일이 변경되었거나 처음 로드인 경우 버전 증가
+                // (실제로는 서버에서 파일의 마지막 수정 시간을 체크해야 하지만,
+                // 개발 환경에서는 새로고침할 때마다 버전 증가로 처리)
+                if (!lastHash || lastHash !== currentHash) {
+                    // 짧은 시간 내 중복 증가 방지 (1초 이내 새로고침은 무시)
+                    const lastUpdate = localStorage.getItem('snakeGameLastUpdate');
+                    const now = Date.now();
+                    
+                    if (!lastUpdate || (now - parseInt(lastUpdate)) > 1000) {
                         version = incrementVersion(version);
                         localStorage.setItem(versionKey, version);
+                        localStorage.setItem('snakeGameLastUpdate', now.toString());
+                        console.log('Version updated to:', version);
                     }
                 }
                 
-                localStorage.setItem(lastPageLoadKey, now.toString());
+                // 현재 해시 저장 (실제로는 파일 내용 해시를 저장해야 함)
+                localStorage.setItem(lastFileHashKey, currentHash);
+                
                 return version;
             } else {
                 // 배포 모드: 고정 버전 사용
@@ -121,15 +135,66 @@
         VERSION = getVersion();
         document.getElementById('version-badge').textContent = `v${VERSION}`;
         
-        const script = document.createElement('script');
-        if (DEV_MODE) {
-            // 개발 모드: 타임스탬프로 캐시 무효화
-            script.src = `game.js?t=${Date.now()}`;
-        } else {
-            // 배포 모드: 버전 번호 사용
-            script.src = `game.js?v=${VERSION}`;
+        // 스크립트 로드 및 실행
+        function loadGameScript() {
+            const script = document.createElement('script');
+            const timestamp = Date.now();
+            
+            if (DEV_MODE) {
+                // 개발 모드: 타임스탬프로 캐시 무효화 및 버전 증가
+                script.src = `game.js?t=${timestamp}`;
+                
+                // 파일이 변경되었는지 감지 (타임스탬프 기반)
+                const lastScriptTimeKey = 'snakeGameLastScriptTime';
+                const lastScriptTime = localStorage.getItem(lastScriptTimeKey);
+                
+                // 이전 스크립트 로드 시간과 비교하여 버전 증가
+                if (lastScriptTime && (timestamp - parseInt(lastScriptTime)) > 2000) {
+                    // 2초 이상 지났으면 파일이 저장된 것으로 간주하고 버전 증가
+                    const versionKey = 'snakeGameVersion';
+                    let currentVersion = localStorage.getItem(versionKey) || VERSION;
+                    currentVersion = incrementVersion(currentVersion);
+                    localStorage.setItem(versionKey, currentVersion);
+                    VERSION = currentVersion;
+                    
+                    // 버전 배지 업데이트
+                    const versionBadge = document.getElementById('version-badge');
+                    if (versionBadge) {
+                        versionBadge.textContent = `v${currentVersion}`;
+                    }
+                    
+                    console.log('Version incremented to:', currentVersion);
+                }
+                
+                localStorage.setItem(lastScriptTimeKey, timestamp.toString());
+            } else {
+                // 배포 모드: 버전 번호 사용
+                script.src = `game.js?v=${VERSION}`;
+            }
+            
+            script.onload = function() {
+                console.log('Game script loaded successfully');
+                // 스크립트 로드 후 약간의 지연을 두고 게임 시작
+                setTimeout(function() {
+                    if (typeof startGame === 'function') {
+                        startGame();
+                    } else {
+                        console.error('startGame function not found');
+                    }
+                }, 100);
+            };
+            script.onerror = function() {
+                console.error('Failed to load game script');
+            };
+            document.body.appendChild(script);
         }
-        document.body.appendChild(script);
+        
+        // DOM이 준비되면 스크립트 로드
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', loadGameScript);
+        } else {
+            loadGameScript();
+        }
     </script>
 </body>
 </html>

@@ -13,20 +13,26 @@ let highScore = 0;
 
 // 게임 초기화 함수
 function initGameVariables() {
+    console.log('Initializing game variables...');
+    
     // DOM이 준비되었는지 확인
     canvas = document.getElementById('gameCanvas');
     if (!canvas) {
         console.error('Canvas element not found!');
         return false;
     }
+    console.log('Canvas found:', canvas.width, 'x', canvas.height);
     
     ctx = canvas.getContext('2d');
     if (!ctx) {
         console.error('Could not get 2d context!');
         return false;
     }
+    console.log('Context obtained');
     
     tileCount = canvas.width / gridSize;
+    console.log('Tile count:', tileCount);
+    
     snake = [{ x: 10, y: 10 }];
     food = {};
     dx = 0;
@@ -41,13 +47,17 @@ function initGameVariables() {
         highScoreElement.textContent = highScore;
     }
     
+    // 이벤트 리스너 설정
+    setupEventListeners();
+    
+    console.log('Game variables initialized successfully');
     return true;
 }
 
 // 음식 생성 함수
 function generateFood() {
     if (!tileCount) {
-        console.error('tileCount is not defined');
+        console.error('tileCount is not defined in generateFood');
         return;
     }
     
@@ -56,10 +66,13 @@ function generateFood() {
         y: Math.floor(Math.random() * tileCount)
     };
     
+    console.log('Food generated at:', food.x, food.y);
+    
     // 뱀과 겹치지 않도록 확인
     if (snake && snake.length > 0) {
         for (let segment of snake) {
             if (segment.x === food.x && segment.y === food.y) {
+                console.log('Food overlaps with snake, regenerating...');
                 generateFood();
                 return;
             }
@@ -69,6 +82,8 @@ function generateFood() {
 
 // 게임 초기화
 function initGame() {
+    console.log('initGame called');
+    
     if (!canvas || !ctx) {
         if (!initGameVariables()) {
             console.error('Failed to initialize game variables');
@@ -94,6 +109,7 @@ function initGame() {
     
     generateFood();
     gameLoop();
+    console.log('Game restarted');
 }
 
 // 게임 오버 처리
@@ -115,6 +131,8 @@ function gameOver() {
 function drawSnake() {
     // ctx가 없으면 그리지 않음
     if (!ctx || !snake || snake.length === 0) {
+        if (!ctx) console.error('ctx is null in drawSnake');
+        if (!snake || snake.length === 0) console.error('snake is empty in drawSnake');
         return;
     }
     
@@ -337,7 +355,15 @@ function moveSnake() {
 
 // 게임 루프
 function gameLoop() {
-    if (!gameRunning || !ctx || !canvas) return;
+    if (!gameRunning) {
+        console.log('Game not running');
+        return;
+    }
+    
+    if (!ctx || !canvas) {
+        console.error('Canvas or context not available');
+        return;
+    }
     
     clearCanvas();
     drawFood();
@@ -445,69 +471,109 @@ function handleClickOrTouch(x, y) {
     }
 }
 
-// 마우스 클릭 이벤트
-canvas.addEventListener('click', (e) => {
-    e.preventDefault();
-    const rect = canvas.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-    handleClickOrTouch(x, y);
-});
-
-// 터치 이벤트
-canvas.addEventListener('touchstart', (e) => {
-    e.preventDefault(); // 기본 동작 방지 (스크롤 등)
-    if (!gameRunning) return;
-    
-    const touch = e.touches[0];
-    const rect = canvas.getBoundingClientRect();
-    const x = touch.clientX - rect.left;
-    const y = touch.clientY - rect.top;
-    handleClickOrTouch(x, y);
-}, { passive: false });
-
-// 모바일 버튼 이벤트
-document.getElementById('up-btn').addEventListener('click', () => {
-    if (!gameRunning || dy === 1) return;
-    dx = 0;
-    dy = -1;
-});
-
-document.getElementById('down-btn').addEventListener('click', () => {
-    if (!gameRunning || dy === -1) return;
-    dx = 0;
-    dy = 1;
-});
-
-document.getElementById('left-btn').addEventListener('click', () => {
-    if (!gameRunning || dx === 1) return;
-    dx = -1;
-    dy = 0;
-});
-
-document.getElementById('right-btn').addEventListener('click', () => {
-    if (!gameRunning || dx === -1) return;
-    dx = 1;
-    dy = 0;
-});
-
-// 다시 시작 버튼
-document.getElementById('restart-btn').addEventListener('click', initGame);
-
-// DOM이 준비된 후 게임 시작
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', startGame);
-} else {
-    startGame();
-}
-
-function startGame() {
-    if (!initGameVariables()) {
-        console.error('Failed to initialize game variables');
+// 이벤트 리스너 등록 함수
+function setupEventListeners() {
+    if (!canvas) {
+        console.error('Canvas not available for event listeners');
         return;
     }
     
-    generateFood();
-    gameLoop();
+    // 마우스 클릭 이벤트
+    canvas.addEventListener('click', (e) => {
+        e.preventDefault();
+        if (!gameRunning) return;
+        const rect = canvas.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        handleClickOrTouch(x, y);
+    });
+
+    // 터치 이벤트
+    canvas.addEventListener('touchstart', (e) => {
+        e.preventDefault(); // 기본 동작 방지 (스크롤 등)
+        if (!gameRunning) return;
+        
+        const touch = e.touches[0];
+        const rect = canvas.getBoundingClientRect();
+        const x = touch.clientX - rect.left;
+        const y = touch.clientY - rect.top;
+        handleClickOrTouch(x, y);
+    }, { passive: false });
+
+    // 모바일 버튼 이벤트
+    const upBtn = document.getElementById('up-btn');
+    const downBtn = document.getElementById('down-btn');
+    const leftBtn = document.getElementById('left-btn');
+    const rightBtn = document.getElementById('right-btn');
+    const restartBtn = document.getElementById('restart-btn');
+    
+    if (upBtn) {
+        upBtn.addEventListener('click', () => {
+            if (!gameRunning || dy === 1) return;
+            dx = 0;
+            dy = -1;
+        });
+    }
+    
+    if (downBtn) {
+        downBtn.addEventListener('click', () => {
+            if (!gameRunning || dy === -1) return;
+            dx = 0;
+            dy = 1;
+        });
+    }
+    
+    if (leftBtn) {
+        leftBtn.addEventListener('click', () => {
+            if (!gameRunning || dx === 1) return;
+            dx = -1;
+            dy = 0;
+        });
+    }
+    
+    if (rightBtn) {
+        rightBtn.addEventListener('click', () => {
+            if (!gameRunning || dx === -1) return;
+            dx = 1;
+            dy = 0;
+        });
+    }
+    
+    // 다시 시작 버튼
+    if (restartBtn) {
+        restartBtn.addEventListener('click', () => {
+            console.log('Restart button clicked');
+            initGame();
+        });
+    }
 }
+
+// 게임 시작 함수
+function startGame() {
+    console.log('Starting game...');
+    
+    // DOM이 준비될 때까지 대기
+    function tryStart() {
+        if (!initGameVariables()) {
+            console.log('DOM not ready, retrying...');
+            setTimeout(tryStart, 100);
+            return;
+        }
+        
+        console.log('Game variables initialized');
+        generateFood();
+        console.log('Food generated:', food);
+        gameLoop();
+        console.log('Game loop started');
+    }
+    
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', tryStart);
+    } else {
+        tryStart();
+    }
+}
+
+// 스크립트가 로드되면 게임 시작
+startGame();
 

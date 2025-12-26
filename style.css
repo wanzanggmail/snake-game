@@ -95,23 +95,28 @@ h1 {
     left: 50%;
     transform: translate(-50%, -50%);
     background: rgba(255, 255, 255, 0.95);
-    padding: 30px;
+    padding: 40px 30px;
     border-radius: 15px;
     text-align: center;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
     z-index: 10;
+    min-width: 280px;
+    max-width: 90%;
+    width: auto;
 }
 
 .game-over h2 {
     color: #e74c3c;
-    margin-bottom: 15px;
+    margin-bottom: 20px;
     font-size: 2em;
+    white-space: nowrap;
 }
 
 .game-over p {
-    font-size: 1.2em;
-    margin-bottom: 20px;
+    font-size: 1.3em;
+    margin-bottom: 25px;
     color: #333;
+    white-space: nowrap;
 }
 
 #restart-btn {
