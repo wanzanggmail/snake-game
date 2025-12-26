@@ -1,47 +1,97 @@
-// 게임 캔버스 및 컨텍스트 설정
-const canvas = document.getElementById('gameCanvas');
-const ctx = canvas.getContext('2d');
-
-// 게임 변수
-const gridSize = 20;
-const tileCount = canvas.width / gridSize;
-
+// 게임 변수 (전역)
+let canvas;
+let ctx;
+let gridSize = 20;
+let tileCount;
 let snake = [{ x: 10, y: 10 }];
 let food = {};
 let dx = 0;
 let dy = 0;
 let score = 0;
 let gameRunning = true;
+let highScore = 0;
 
-// 최고 점수 로드
-let highScore = localStorage.getItem('snakeHighScore') || 0;
-document.getElementById('high-score').textContent = highScore;
+// 게임 초기화 함수
+function initGameVariables() {
+    // DOM이 준비되었는지 확인
+    canvas = document.getElementById('gameCanvas');
+    if (!canvas) {
+        console.error('Canvas element not found!');
+        return false;
+    }
+    
+    ctx = canvas.getContext('2d');
+    if (!ctx) {
+        console.error('Could not get 2d context!');
+        return false;
+    }
+    
+    tileCount = canvas.width / gridSize;
+    snake = [{ x: 10, y: 10 }];
+    food = {};
+    dx = 0;
+    dy = 0;
+    score = 0;
+    gameRunning = true;
+    
+    // 최고 점수 로드
+    highScore = parseInt(localStorage.getItem('snakeHighScore')) || 0;
+    const highScoreElement = document.getElementById('high-score');
+    if (highScoreElement) {
+        highScoreElement.textContent = highScore;
+    }
+    
+    return true;
+}
 
 // 음식 생성 함수
 function generateFood() {
+    if (!tileCount) {
+        console.error('tileCount is not defined');
+        return;
+    }
+    
     food = {
         x: Math.floor(Math.random() * tileCount),
         y: Math.floor(Math.random() * tileCount)
     };
     
     // 뱀과 겹치지 않도록 확인
-    for (let segment of snake) {
-        if (segment.x === food.x && segment.y === food.y) {
-            generateFood();
-            return;
+    if (snake && snake.length > 0) {
+        for (let segment of snake) {
+            if (segment.x === food.x && segment.y === food.y) {
+                generateFood();
+                return;
+            }
         }
     }
 }
 
 // 게임 초기화
 function initGame() {
+    if (!canvas || !ctx) {
+        if (!initGameVariables()) {
+            console.error('Failed to initialize game variables');
+            return;
+        }
+    }
+    
     snake = [{ x: 10, y: 10 }];
     dx = 0;
     dy = 0;
     score = 0;
     gameRunning = true;
-    document.getElementById('score').textContent = score;
-    document.getElementById('gameOver').classList.add('hidden');
+    
+    const scoreElement = document.getElementById('score');
+    if (scoreElement) {
+        scoreElement.textContent = score;
+    }
+    
+    const gameOverElement = document.getElementById('gameOver');
+    if (gameOverElement) {
+        gameOverElement.classList.add('hidden');
+    }
+    
     generateFood();
     gameLoop();
 }
@@ -63,6 +113,11 @@ function gameOver() {
 
 // 그리기 함수들
 function drawSnake() {
+    // ctx가 없으면 그리지 않음
+    if (!ctx || !snake || snake.length === 0) {
+        return;
+    }
+    
     // 뱀의 몸통 그리기
     for (let i = 0; i < snake.length; i++) {
         const segment = snake[i];
@@ -172,6 +227,11 @@ function drawSnake() {
 }
 
 function drawFood() {
+    // 음식이 생성되지 않았으면 그리지 않음
+    if (!food || food.x === undefined || food.y === undefined) {
+        return;
+    }
+    
     // 사과 모양으로 음식 그리기
     const x = food.x * gridSize + gridSize / 2;
     const y = food.y * gridSize + gridSize / 2;
@@ -208,6 +268,11 @@ function drawFood() {
 }
 
 function clearCanvas() {
+    // ctx와 canvas가 없으면 그리지 않음
+    if (!ctx || !canvas) {
+        return;
+    }
+    
     // 배경색
     ctx.fillStyle = '#f0f4f8';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -234,6 +299,11 @@ function clearCanvas() {
 function moveSnake() {
     // 방향이 설정되지 않았으면 이동하지 않음
     if (dx === 0 && dy === 0) {
+        return;
+    }
+    
+    // snake와 tileCount가 없으면 이동하지 않음
+    if (!snake || snake.length === 0 || !tileCount) {
         return;
     }
     
@@ -267,7 +337,7 @@ function moveSnake() {
 
 // 게임 루프
 function gameLoop() {
-    if (!gameRunning) return;
+    if (!gameRunning || !ctx || !canvas) return;
     
     clearCanvas();
     drawFood();
@@ -424,7 +494,20 @@ document.getElementById('right-btn').addEventListener('click', () => {
 // 다시 시작 버튼
 document.getElementById('restart-btn').addEventListener('click', initGame);
 
-// 게임 시작
-generateFood();
-gameLoop();
+// DOM이 준비된 후 게임 시작
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', startGame);
+} else {
+    startGame();
+}
+
+function startGame() {
+    if (!initGameVariables()) {
+        console.error('Failed to initialize game variables');
+        return;
+    }
+    
+    generateFood();
+    gameLoop();
+}
 
