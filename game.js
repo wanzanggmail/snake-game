@@ -353,6 +353,9 @@ function moveSnake() {
     }
 }
 
+// 게임 속도 설정 (밀리초)
+const GAME_SPEED = 250; // 기본 속도 (값이 클수록 느림)
+
 // 게임 루프
 function gameLoop() {
     if (!gameRunning) {
@@ -370,7 +373,7 @@ function gameLoop() {
     moveSnake();
     drawSnake();
     
-    setTimeout(gameLoop, 150);
+    setTimeout(gameLoop, GAME_SPEED);
 }
 
 // 키보드 입력 처리
