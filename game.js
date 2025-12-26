@@ -331,6 +331,80 @@ document.addEventListener('keydown', (e) => {
     }
 });
 
+// 터치 이벤트 처리 (스와이프 제스처)
+let touchStartX = 0;
+let touchStartY = 0;
+let touchEndX = 0;
+let touchEndY = 0;
+
+function handleSwipe() {
+    const deltaX = touchEndX - touchStartX;
+    const deltaY = touchEndY - touchStartY;
+    const minSwipeDistance = 30; // 최소 스와이프 거리
+    
+    // 수평 또는 수직 중 더 큰 이동을 감지
+    if (Math.abs(deltaX) > Math.abs(deltaY)) {
+        // 수평 스와이프
+        if (Math.abs(deltaX) > minSwipeDistance) {
+            const goingRight = dx === 1;
+            const goingLeft = dx === -1;
+            
+            if (deltaX > 0 && !goingLeft) {
+                // 오른쪽 스와이프
+                dx = 1;
+                dy = 0;
+            } else if (deltaX < 0 && !goingRight) {
+                // 왼쪽 스와이프
+                dx = -1;
+                dy = 0;
+            }
+        }
+    } else {
+        // 수직 스와이프
+        if (Math.abs(deltaY) > minSwipeDistance) {
+            const goingDown = dy === 1;
+            const goingUp = dy === -1;
+            
+            if (deltaY > 0 && !goingUp) {
+                // 아래 스와이프
+                dx = 0;
+                dy = 1;
+            } else if (deltaY < 0 && !goingDown) {
+                // 위 스와이프
+                dx = 0;
+                dy = -1;
+            }
+        }
+    }
+}
+
+// 캔버스 터치 이벤트
+canvas.addEventListener('touchstart', (e) => {
+    e.preventDefault(); // 기본 동작 방지 (스크롤 등)
+    if (!gameRunning) return;
+    
+    const touch = e.touches[0];
+    const rect = canvas.getBoundingClientRect();
+    touchStartX = touch.clientX - rect.left;
+    touchStartY = touch.clientY - rect.top;
+}, { passive: false });
+
+canvas.addEventListener('touchmove', (e) => {
+    e.preventDefault(); // 기본 동작 방지
+}, { passive: false });
+
+canvas.addEventListener('touchend', (e) => {
+    e.preventDefault(); // 기본 동작 방지
+    if (!gameRunning) return;
+    
+    const touch = e.changedTouches[0];
+    const rect = canvas.getBoundingClientRect();
+    touchEndX = touch.clientX - rect.left;
+    touchEndY = touch.clientY - rect.top;
+    
+    handleSwipe();
+}, { passive: false });
+
 // 모바일 버튼 이벤트
 document.getElementById('up-btn').addEventListener('click', () => {
     if (!gameRunning || dy === 1) return;
