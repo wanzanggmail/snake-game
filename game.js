@@ -81,6 +81,11 @@ function clearCanvas() {
 
 // 뱀 이동
 function moveSnake() {
+    // 방향이 설정되지 않았으면 이동하지 않음
+    if (dx === 0 && dy === 0) {
+        return;
+    }
+    
     const head = { x: snake[0].x + dx, y: snake[0].y + dy };
     
     // 벽에 충돌 확인
@@ -89,9 +94,9 @@ function moveSnake() {
         return;
     }
     
-    // 자기 몸에 충돌 확인
-    for (let segment of snake) {
-        if (head.x === segment.x && head.y === segment.y) {
+    // 자기 몸에 충돌 확인 (머리는 제외)
+    for (let i = 0; i < snake.length; i++) {
+        if (head.x === snake[i].x && head.y === snake[i].y) {
             gameOver();
             return;
         }
