@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>간단한 뱀 게임</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🐍 뱀 게임</h1>
+            <div class="score-board">
+                <div class="score">점수: <span id="score">0</span></div>
+                <div class="high-score">최고 점수: <span id="high-score">0</span></div>
+            </div>
+        </header>
+        
+        <div class="game-area">
+            <canvas id="gameCanvas" width="400" height="400"></canvas>
+            <div id="gameOver" class="game-over hidden">
+                <h2>게임 오버!</h2>
+                <p>최종 점수: <span id="final-score">0</span></p>
+                <button id="restart-btn">다시 시작</button>
+            </div>
+        </div>
+        
+        <div class="controls">
+            <p>방향키(↑↓←→) 또는 WASD 키로 조작하세요</p>
+            <div class="mobile-controls">
+                <button class="control-btn" id="up-btn">↑</button>
+                <div class="horizontal-controls">
+                    <button class="control-btn" id="left-btn">←</button>
+                    <button class="control-btn" id="down-btn">↓</button>
+                    <button class="control-btn" id="right-btn">→</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="game.js"></script>
+</body>
+</html>
+
