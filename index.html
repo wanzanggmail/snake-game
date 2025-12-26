@@ -20,6 +20,7 @@
     </script>
 </head>
 <body>
+    <div class="version-badge" id="version-badge">v1.0.0</div>
     <div class="container">
         <header>
             <h1>🐍 뱀 게임</h1>
@@ -57,7 +58,68 @@
     <script>
         // 개발 중에는 타임스탬프 사용, 배포 시에는 버전 번호 사용
         const DEV_MODE = true; // 배포 시 false로 변경
-        const VERSION = '1.0.0'; // 배포 시 버전 번호
+        let VERSION = '1.0.0'; // 초기 버전
+        
+        // 버전 관리 함수
+        function getVersion() {
+            const versionKey = 'snakeGameVersion';
+            const lastPageLoadKey = 'snakeGameLastPageLoad';
+            
+            if (DEV_MODE) {
+                // 개발 모드: localStorage에서 버전 가져오기 또는 초기화
+                let version = localStorage.getItem(versionKey);
+                const lastPageLoad = localStorage.getItem(lastPageLoadKey);
+                const now = Date.now();
+                
+                if (!version) {
+                    // 처음 로드: 초기 버전 설정
+                    version = VERSION;
+                    localStorage.setItem(versionKey, version);
+                } else {
+                    // 이전 페이지 로드가 있었고, 5초 이상 지났으면 버전 증가
+                    // (같은 세션에서 연속 새로고침 방지)
+                    if (lastPageLoad && (now - parseInt(lastPageLoad)) > 5000) {
+                        version = incrementVersion(version);
+                        localStorage.setItem(versionKey, version);
+                    }
+                }
+                
+                localStorage.setItem(lastPageLoadKey, now.toString());
+                return version;
+            } else {
+                // 배포 모드: 고정 버전 사용
+                return VERSION;
+            }
+        }
+        
+        // 버전 증가 함수 (예: 1.0.0 -> 1.0.1 -> 1.0.2 ...)
+        function incrementVersion(version) {
+            const parts = version.split('.');
+            let major = parseInt(parts[0]) || 1;
+            let minor = parseInt(parts[1]) || 0;
+            let patch = parseInt(parts[2]) || 0;
+            
+            // 패치 버전 증가
+            patch++;
+            
+            // 패치가 100을 넘으면 마이너 증가
+            if (patch >= 100) {
+                patch = 0;
+                minor++;
+            }
+            
+            // 마이너가 100을 넘으면 메이저 증가
+            if (minor >= 100) {
+                minor = 0;
+                major++;
+            }
+            
+            return `${major}.${minor}.${patch}`;
+        }
+        
+        // 버전 가져오기 및 표시
+        VERSION = getVersion();
+        document.getElementById('version-badge').textContent = `v${VERSION}`;
         
         const script = document.createElement('script');
         if (DEV_MODE) {

@@ -12,6 +12,28 @@ body {
     justify-content: center;
     align-items: center;
     padding: 20px;
+    position: relative;
+}
+
+.version-badge {
+    position: fixed;
+    top: 15px;
+    left: 15px;
+    background: rgba(102, 126, 234, 0.9);
+    color: white;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 0.85em;
+    font-weight: 600;
+    z-index: 1000;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    backdrop-filter: blur(10px);
+    transition: all 0.3s ease;
+}
+
+.version-badge:hover {
+    background: rgba(102, 126, 234, 1);
+    transform: scale(1.05);
 }
 
 .container {
