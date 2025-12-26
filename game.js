@@ -10,6 +10,8 @@ let dy = 0;
 let score = 0;
 let gameRunning = true;
 let highScore = 0;
+let nextDx = 0; // 다음 이동 방향 (중복 입력 방지)
+let nextDy = 0;
 
 // 게임 초기화 함수
 function initGameVariables() {
@@ -37,6 +39,8 @@ function initGameVariables() {
     food = {};
     dx = 0;
     dy = 0;
+    nextDx = 0;
+    nextDy = 0;
     score = 0;
     gameRunning = true;
     
@@ -94,6 +98,8 @@ function initGame() {
     snake = [{ x: 10, y: 10 }];
     dx = 0;
     dy = 0;
+    nextDx = 0;
+    nextDy = 0;
     score = 0;
     gameRunning = true;
     
@@ -108,7 +114,8 @@ function initGame() {
     }
     
     generateFood();
-    gameLoop();
+    lastMoveTime = 0; // 이동 시간 초기화
+    requestAnimationFrame(gameLoop);
     console.log('Game restarted');
 }
 
@@ -315,6 +322,18 @@ function clearCanvas() {
 
 // 뱀 이동
 function moveSnake() {
+    // 다음 방향이 설정되어 있으면 적용
+    if (nextDx !== 0 || nextDy !== 0) {
+        // 반대 방향으로 가는 것 방지
+        if (!((dx === 1 && nextDx === -1) || (dx === -1 && nextDx === 1) || 
+              (dy === 1 && nextDy === -1) || (dy === -1 && nextDy === 1))) {
+            dx = nextDx;
+            dy = nextDy;
+        }
+        nextDx = 0;
+        nextDy = 0;
+    }
+    
     // 방향이 설정되지 않았으면 이동하지 않음
     if (dx === 0 && dy === 0) {
         return;
@@ -353,11 +372,15 @@ function moveSnake() {
     }
 }
 
-// 게임 속도 설정 (밀리초)
-const GAME_SPEED = 250; // 기본 속도 (값이 클수록 느림)
+// 게임 속도 설정 (밀리초) - 뱀 이동 속도
+const GAME_SPEED = 200; // 기본 속도 (값이 클수록 느림) - 더 느리게 조정
+// 렌더링 속도 (밀리초) - 화면 새로고침 속도
+const RENDER_SPEED = 16; // 약 60fps (1000/60 ≈ 16ms)
+
+let lastMoveTime = 0; // 마지막 이동 시간
 
 // 게임 루프
-function gameLoop() {
+function gameLoop(currentTime) {
     if (!gameRunning) {
         console.log('Game not running');
         return;
@@ -368,12 +391,19 @@ function gameLoop() {
         return;
     }
     
+    // 화면은 항상 빠르게 렌더링
     clearCanvas();
     drawFood();
-    moveSnake();
     drawSnake();
     
-    setTimeout(gameLoop, GAME_SPEED);
+    // 뱀 이동은 느리게 (GAME_SPEED 간격)
+    if (!lastMoveTime || (currentTime - lastMoveTime) >= GAME_SPEED) {
+        moveSnake();
+        lastMoveTime = currentTime;
+    }
+    
+    // requestAnimationFrame 사용하여 부드러운 렌더링
+    requestAnimationFrame(gameLoop);
 }
 
 // 키보드 입력 처리
@@ -392,40 +422,41 @@ document.addEventListener('keydown', (e) => {
     const goingLeft = dx === -1;
     
     // 방향 전환 (반대 방향으로 가는 것 방지)
+    // 즉시 적용하지 않고 다음 이동 시 적용
     if (keyPressed === LEFT_KEY && !goingRight) {
-        dx = -1;
-        dy = 0;
+        nextDx = -1;
+        nextDy = 0;
     } else if (keyPressed === UP_KEY && !goingDown) {
-        dx = 0;
-        dy = -1;
+        nextDx = 0;
+        nextDy = -1;
     } else if (keyPressed === RIGHT_KEY && !goingLeft) {
-        dx = 1;
-        dy = 0;
+        nextDx = 1;
+        nextDy = 0;
     } else if (keyPressed === DOWN_KEY && !goingUp) {
-        dx = 0;
-        dy = 1;
+        nextDx = 0;
+        nextDy = 1;
     }
     
     // WASD 키 지원
     if (e.key === 'a' || e.key === 'A') {
         if (!goingRight) {
-            dx = -1;
-            dy = 0;
+            nextDx = -1;
+            nextDy = 0;
         }
     } else if (e.key === 'w' || e.key === 'W') {
         if (!goingDown) {
-            dx = 0;
-            dy = -1;
+            nextDx = 0;
+            nextDy = -1;
         }
     } else if (e.key === 'd' || e.key === 'D') {
         if (!goingLeft) {
-            dx = 1;
-            dy = 0;
+            nextDx = 1;
+            nextDy = 0;
         }
     } else if (e.key === 's' || e.key === 'S') {
         if (!goingUp) {
-            dx = 0;
-            dy = 1;
+            nextDx = 0;
+            nextDy = 1;
         }
     }
 });
@@ -450,12 +481,12 @@ function handleClickOrTouch(x, y) {
         
         if (deltaX > 0 && !goingLeft) {
             // 오른쪽 클릭
-            dx = 1;
-            dy = 0;
+            nextDx = 1;
+            nextDy = 0;
         } else if (deltaX < 0 && !goingRight) {
             // 왼쪽 클릭
-            dx = -1;
-            dy = 0;
+            nextDx = -1;
+            nextDy = 0;
         }
     } else {
         // 수직 이동
@@ -464,12 +495,12 @@ function handleClickOrTouch(x, y) {
         
         if (deltaY > 0 && !goingUp) {
             // 아래 클릭
-            dx = 0;
-            dy = 1;
+            nextDx = 0;
+            nextDy = 1;
         } else if (deltaY < 0 && !goingDown) {
             // 위 클릭
-            dx = 0;
-            dy = -1;
+            nextDx = 0;
+            nextDy = -1;
         }
     }
 }
@@ -566,7 +597,8 @@ function startGame() {
         console.log('Game variables initialized');
         generateFood();
         console.log('Food generated:', food);
-        gameLoop();
+        lastMoveTime = 0; // 이동 시간 초기화
+        requestAnimationFrame(gameLoop);
         console.log('Game loop started');
     }
     
